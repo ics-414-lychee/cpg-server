@@ -1,48 +1,65 @@
 <?php
 //save.php
 $authToken = $_POST['auth'];
-$saveInformation = $_POST['saveInformation']; //json
+$username = $_POST['username'];
+$json = $_POST['json']; //Contains all node information and projectid
 
 /**
--------------------------- ALL JSON FILES LOOK LIKE THIS --------------------------
-username: <user>
-project: <projectname/id>
+------------------------- JSON Return ------------------------- 
+Error: <true/false> //true meaning success
+ErrorMessage: <message>
 
+---------------------------------------------------------------------------------------------
+--NOTES FOR ME
+-------------------------- ALL JSON FILES LOOK LIKE THIS FROM JAVA --------------------------
+    for (ActivityNode n : a.getNodeList()) {
+      JSONObject node = new JSONObject();
+      node.put("NodeID", n.getNodeId());
+      node.put("NodeName", n.getName());
+      node.put("Description", n.getDescription());
 
+      // Times are accessed as an array.
+      double times[] = n.getTimes();
+      node.put("NormalTime", times[0]);
+      node.put("Optimistictime", times[1]);
+      node.put("PessimisticTime", times[2]);
+
+      // We store our dependency list as a comma-separated list. Store the nodes in the main list.
+      node.put("DependencyNodeID", String.join(",", n.getDependencies().toString()));
+      nodeList.add(node);
+    }
+
+    net.put("ProjectID", a.getNetworkId());
+    net.put("NodeList", nodeList);
+	
+	{
+		"NodeList":
+		[
+			{
+				"Description":"testn",
+				"NodeName":"test",
+				"NodeID":0,
+				"PessimisticTime":1414.0,
+				"DependencyNodeID":"[]",
+				"NormalTime":122.0,
+				"Optimistictime":133.0
+			},
+			{
+				"Description":"testn",
+				"NodeName":"test1",
+				"NodeID":1,
+				"PessimisticTime":1414.0,
+				"DependencyNodeID":"[]",
+				"NormalTime":122.0,
+				"Optimistictime":133.0
+			}
+		],
+		"ProjectID":0
+	}
 */
 
 $json = json_decode($saveInformation);
 
-$sqlVerify = mssql_init('UserVerifyAuthtoken_Proc');
 
-mssql_bind($sqlVerify, '@Authtoken', $username, SQLVARCHAR, false, false, 50);
-
-$query = mssql_execute($sqlVerify);
-
-mssql_result($sqlVerify)
-
-//There's only one result set which contains status, errormsg
-$resultSet = mssql_result($query);
-
-if(resultSet[0] == "true")
-{
-	echo "success";
-	
-	$sqlSave = mssql_init('UserSaveProject_Proc');
-	
-	mssql_bind($sqlSave, '@Username', $json->username, SQLVARCHAR, false, false, 50);
-	mssql_bind($sqlSave, '@Project', $json->project, SQLVARCHAR, false, false, 20);
-	mssql_bind($sqlSave, '@', $json->username, SQLVARCHAR, false, false, 50);
-	mssql_bind($sqlSave, '@Username', $json->username, SQLVARCHAR, false, false, 50);
-	
-}
-else
-{
-	echo resultSet[1];
-}
-
-mssql_free_result($sqlVerify);
-
-mssql_free_statement($sqlVerify);
 
 ?>

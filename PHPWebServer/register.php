@@ -35,6 +35,7 @@ if(isset($_POST['username']) && isset($_POST['password']))
 	$resultRegister = sqlsrv_fetch_array($ex);
 	echo json_encode(array('Error' => $resultRegister[0], 'ErrorMessage' => $resultRegister[1]));
 	
+	sqlsrv_close($conn);
 }
 else
 {

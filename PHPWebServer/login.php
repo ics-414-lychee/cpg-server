@@ -65,14 +65,19 @@ if(isset($_POST['username']) && isset($_POST['password']))
 			$sqlQueryViewProjects = '{call ViewAllAvailableProjects_Proc (?)}';
 			
 			$exViewProjects = sqlsrv_query($conn, $sqlQueryViewProjects, $viewProjectsParams);
-			$pids = '';
-			$pnames = '';
 			
-			while( $row = sqlsrv_fetch_array( $exViewProjects, SQLSRV_FETCH_ASSOC ))
+			$pidsArray = [];
+			$pnamesArray = [];
+			
+			
+			while( $row = sqlsrv_fetch_array( $exViewProjects, SQLSRV_FETCH_NUMERIC ))
 			{
-				$pids = $pids . ',' . $row[0];
-				$pnames = $pnames . ',' . $row[1];
+				array_push($pidsArray, $row[0]);
+				array_push($pnamesArray, $row[1]);
 			}
+			
+			$pids = implode(',', $pidsArray);
+			$pnames = implode(',', $pnamesArray);
 			
 			echo json_encode(array('ErrorJSON' => $jsonArrayReturn, 'ProjectsJSON' => array('ProjectIDs' => $pids, 'ProjectNames' => $pnames)));
 		}
@@ -85,6 +90,8 @@ if(isset($_POST['username']) && isset($_POST['password']))
 	{
 		echo json_encode(array('ErrorJSON'=>array('Error' => $resultSetGetSalt[0], 'ErrorMessage'=>$resultSetGetSalt[1], 'Auth'=>null), 'ProjectsJSON'=>null));
 	}
+	
+	sqlsrv_close($conn);
 }
 else
 {

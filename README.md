@@ -13,6 +13,7 @@ Takes in the raw data from the client (activities and their dependencies), execu
 ### Requirements:
 - PHP 5.6.x or newer
 - MS SQL Server (install PHP drivers for your version of SQL Server and PHP version)
+  - You will need to modify your php.ini to include the sqlsrv extensions
 
 ### Instructions
 #### SQL Server
@@ -24,4 +25,4 @@ Takes in the raw data from the client (activities and their dependencies), execu
 
  
 #### PHP Web Server
-- Put all php files in your web server and configure $serverName, and database information to match your database configuration. Include password in $connInfo if password is set.
+- Put all php files in your web server and configure $serverName, and database information to match your database configuration. Include password in $connInfo if password is set

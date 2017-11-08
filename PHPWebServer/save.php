@@ -16,6 +16,12 @@ if(isset($_POST['auth']) && isset($_POST['username']) && isset($_FILES['json']) 
 	$connInfo = array('Database'=>'LycheeActivityOnNode414');
 	$conn = sqlsrv_connect($serverName, $connInfo);
 	
+	if(!$conn)
+	{
+		echo json_encode(array('Error' => 'false', 'ErrorMessage' => 'Connection to database not established'));
+		die( print_r( sqlsrv_errors(), true));
+	}
+	
 	$sqlQueryConfirmAuth = '{call UserAuthentication_Proc (?,?)}';
 	$confirmAuthParams = array(
 								array($username, SQLSRV_PARAM_IN),

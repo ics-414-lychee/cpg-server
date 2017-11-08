@@ -18,8 +18,16 @@ if(isset($_POST['username']) && isset($_POST['password']))
 	$connInfo = array('Database'=>'LycheeActivityOnNode414');
 	$conn = sqlsrv_connect($serverName, $connInfo);
 	
+	if(!$conn)
+	{
+		echo json_encode(array('Error' => 'false', 'ErrorMessage' => 'Connection to database not established'));
+		die( print_r( sqlsrv_errors(), true));
+	}
+	
 	$sqlQueryGetSalt = '{call ViewRandomGeneratedSalt_Proc}';
-	$resultSetGetSalt = sqlsrv_fetch_array(sqlsrv_query($conn, $sqlQueryGetSalt));
+	$ex = sqlsrv_query($conn, $sqlQueryGetSalt);
+	
+	$resultSetGetSalt = sqlsrv_fetch_array($ex);
 	
 	$passhash = password_hash($pass, PASSWORD_BCRYPT, array('salt'=>$resultSetGetSalt[0]));
 	

@@ -20,7 +20,7 @@ Takes in the raw data from the client (activities and their dependencies), execu
 - Make a new SQL Server Agent Job
 - Have the following configurations:
   - Schedule: Daily, Occurs every 30 minutes, no end date
-  - Steps: exec MaintenanceAuthentication_proc on LycheeActivityOnNode414 database
+  - Steps: ```exec MaintenanceAuthentication_proc on LycheeActivityOnNode414 database```
 
  
 #### PHP Web Server

@@ -6,11 +6,12 @@ Error: <true/false> //true meaning success
 ErrorMessage: <message>
 ProjectID: <projectID>
 */
-if(isset($_POST['username']) && isset($_POST['auth']) && isset($_POST['projectname']))
+if(isset($_POST['username']) && isset($_POST['auth']) && isset($_POST['projectname']) && isset($_POST['projectdeadline']))
 {
 	$authToken = $_POST['auth'];
 	$username = $_POST['username'];
 	$projectName = $_POST['projectname'];
+	$projectDeadline = $_POST['projectdeadline'];
 	
 	$serverName = 'localhost';
 	$connInfo = array('Database'=>'LycheeActivityOnNode414');
@@ -32,10 +33,11 @@ if(isset($_POST['username']) && isset($_POST['auth']) && isset($_POST['projectna
 	
 	if($resultSetConfirmAuthentication[0] == "true")
 	{
-		$sqlQueryCreateProject = '{call CreateProject_Proc (?,?)}';
+		$sqlQueryCreateProject = '{call CreateProject_Proc (?,?,?)}';
 		$createProjectParams = array(
 									array($username, SQLSRV_PARAM_IN),
-									array($projectName, SQLSRV_PARAM_IN)
+									array($projectName, SQLSRV_PARAM_IN),
+									array($projectDeadline, SQLSRV_PARAM_IN)
 								);
 		$resultSetCreateProject = sqlsrv_fetch_array(sqlsrv_query($conn, $sqlQueryCreateProject, $createProjectParams));
 		

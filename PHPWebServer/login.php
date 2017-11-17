@@ -23,6 +23,7 @@ ProjectsJSON:
 	//For viewing all projects that the user is added to/owns
 	ProjectIDs: <id1,id2,id3,id4...>
 	ProjectNames: <name1,name2,name3,name4...>
+	ProjectDeadlines: <deadline1,deadline2,deadline3,deadline4...>
 
 */
 
@@ -74,18 +75,21 @@ if(isset($_POST['username']) && isset($_POST['password']))
 			
 			$pidsArray = [];
 			$pnamesArray = [];
+			$pdeadlinesArray = [];
 			
 			
 			while( $row = sqlsrv_fetch_array( $exViewProjects, SQLSRV_FETCH_NUMERIC ))
 			{
 				array_push($pidsArray, $row[0]);
 				array_push($pnamesArray, $row[1]);
+				array_push($pdeadlinsArray, $row[2]);
 			}
 			
 			$pids = implode(',', $pidsArray);
 			$pnames = implode(',', $pnamesArray);
+			$pdeadlinesArray = implode(',', $pdeadlinesArray);
 			
-			echo json_encode(array('ErrorJSON' => $jsonArrayReturn, 'ProjectsJSON' => array('ProjectIDs' => $pids, 'ProjectNames' => $pnames)));
+			echo json_encode(array('ErrorJSON' => $jsonArrayReturn, 'ProjectsJSON' => array('ProjectIDs' => $pids, 'ProjectNames' => $pnames, 'ProjectDeadlines' => $pdeadlinesArray)));
 		}
 		else
 		{

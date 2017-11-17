@@ -6,11 +6,16 @@ Error: <true/false> //true meaning success
 ErrorMessage: <message>
 */
 
-if(isset($_POST['auth']) && isset($_POST['username']) && isset($_FILES['json']) && $_FILES['json']['size'] < 1000000) //Cannot be greater than 1mb
+if(isset($_POST['auth']) && isset($_POST['username']) && isset($_POST['json'])) //Cannot be greater than 1mb
 {
 	$authToken = $_POST['auth'];
 	$username = $_POST['username'];
-	$json = json_decode(file_get_contents($_FILES['json']['tmp_name']), true); //Contains all node information and projectid
+	$json = json_decode($_POST['json'], true); //Contains all node information and projectid
+	
+	if(!isset($json['ProjectID']) || !isset($json['ProjectDeadline']) || !isset($json['NodeList']))
+	{
+		GOTO ExitFail;
+	}
 	
 	$serverName = 'localhost';
 	$connInfo = array('Database'=>'LycheeActivityOnNode414');
@@ -41,17 +46,67 @@ if(isset($_POST['auth']) && isset($_POST['username']) && isset($_FILES['json']) 
 		$resultInitializeProjectSave = sqlsrv_fetch_array(sqlsrv_query($conn, $sqlQueryInitializeProjectSave, $initializeProjectSaveParams));
 		if($resultInitializeProjectSave[0] == "true")
 		{
-			$errors = false;
+			///At this point, need to update project deadline
 			
-			foreach($json['NodeList'] as $nodeListItem)
+			$sqlQueryUpdateProjectInfo = '{call UserUpdateProject_Proc (?,?,?)}';
+			$updateProjectInfoParams = array(
+												array($username, SQLSRV_PARAM_IN),
+												array($json['ProjectID'], SQLSRV_PARAM_IN),
+												array($json['ProjectDeadline'], SQLSRV_PARAM_IN)
+											);
+
+			$resultUpdateProjectInfo = sqlsrv_fetch_array(sqlsrv_query($conn, $sqlQueryUpdateProjectInfo, $updateProjectInfoParams));
+			if($resultUpdateProjectInfo[0] == "true")
 			{
-				$sqlQuerySaveNode = '{call UserSaveSingleNode_Proc (?,?,?,?,?,?,?,?,?)}';
-				//Chance that dependencies for node does not exist. In which case, we will not loop through them. But if they do, we loop through them.
-				if(array_key_exists('DependencyNodeID', $nodeListItem))
+				$errors = false;
+				
+				foreach($json['NodeList'] as $nodeListItem)
 				{
-					$dependencies = explode(',', $nodeListItem['DependencyNodeID']);
-					foreach($dependencies as $nodeid)
+					$sqlQuerySaveNode = '{call UserSaveSingleNode_Proc (?,?,?,?,?,?,?,?,?)}';
+					//Chance that dependencies for node does not exist. In which case, we will not loop through them. But if they do, we loop through them.
+					if(array_key_exists('DependencyNodeID', $nodeListItem))
 					{
+						$dependencies = explode(',', $nodeListItem['DependencyNodeID']);
+						foreach($dependencies as $nodeid)
+						{
+							$saveNodeParams = array(
+														array($username, SQLSRV_PARAM_IN),
+														array($json['ProjectID'], SQLSRV_PARAM_IN),
+														array($nodeListItem['NodeID'], SQLSRV_PARAM_IN),
+														array($nodeListItem['NodeName'], SQLSRV_PARAM_IN),
+														array($nodeListItem['Optimistictime'], SQLSRV_PARAM_IN),
+														array($nodeListItem['NormalTime'], SQLSRV_PARAM_IN),
+														array($nodeListItem['PessimisticTime'], SQLSRV_PARAM_IN),
+														array($nodeid, SQLSRV_PARAM_IN),
+														array($nodeListItem['Description'], SQLSRV_PARAM_IN)
+													);
+							
+							$execSaveNode = sqlsrv_query($conn, $sqlQuerySaveNode, $saveNodeParams);
+							
+							if(!$execSaveNode) //If fails to save at any point due to sql error
+							{
+								echo json_encode(array('Error' => 'false', 'ErrorMessage' => sqlsrv_errors()));
+								$errors = true;
+								break 2;
+							}
+							else
+							{
+								$saveNodeResult = sqlsrv_fetch_array($execSaveNode);
+								//The only time this can return "false" is when the project does not belong to them
+								//This should also never be the case because when we initialize the SaveFullProject, we are also performing this check. THis is just a "just in case" thing though
+								//For the race condition such that while someone is performing a save, someone just did a delete
+								if($saveNodeResult[0] == "false")
+								{
+									echo json_encode(array('Error'=>$saveNodeResult[0], 'ErrorMessage' => $saveNodeResult[1]));
+									$errors = true;
+									break 2;
+								}
+							}
+						}
+					}
+					else
+					{
+						//Case where there are no dependencies
 						$saveNodeParams = array(
 													array($username, SQLSRV_PARAM_IN),
 													array($json['ProjectID'], SQLSRV_PARAM_IN),
@@ -60,7 +115,7 @@ if(isset($_POST['auth']) && isset($_POST['username']) && isset($_FILES['json']) 
 													array($nodeListItem['Optimistictime'], SQLSRV_PARAM_IN),
 													array($nodeListItem['NormalTime'], SQLSRV_PARAM_IN),
 													array($nodeListItem['PessimisticTime'], SQLSRV_PARAM_IN),
-													array($nodeid, SQLSRV_PARAM_IN),
+													array(-1, SQLSRV_PARAM_IN),
 													array($nodeListItem['Description'], SQLSRV_PARAM_IN)
 												);
 						
@@ -70,7 +125,7 @@ if(isset($_POST['auth']) && isset($_POST['username']) && isset($_FILES['json']) 
 						{
 							echo json_encode(array('Error' => 'false', 'ErrorMessage' => sqlsrv_errors()));
 							$errors = true;
-							break 2;
+							break;
 						}
 						else
 						{
@@ -82,54 +137,21 @@ if(isset($_POST['auth']) && isset($_POST['username']) && isset($_FILES['json']) 
 							{
 								echo json_encode(array('Error'=>$saveNodeResult[0], 'ErrorMessage' => $saveNodeResult[1]));
 								$errors = true;
-								break 2;
+								break;
 							}
 						}
 					}
 				}
-				else
+				
+				//Only print out the success if no errors occurred during save
+				if(!$errors)
 				{
-					//Case where there are no dependencies
-					$saveNodeParams = array(
-												array($username, SQLSRV_PARAM_IN),
-												array($json['ProjectID'], SQLSRV_PARAM_IN),
-												array($nodeListItem['NodeID'], SQLSRV_PARAM_IN),
-												array($nodeListItem['NodeName'], SQLSRV_PARAM_IN),
-												array($nodeListItem['Optimistictime'], SQLSRV_PARAM_IN),
-												array($nodeListItem['NormalTime'], SQLSRV_PARAM_IN),
-												array($nodeListItem['PessimisticTime'], SQLSRV_PARAM_IN),
-												array(-1, SQLSRV_PARAM_IN),
-												array($nodeListItem['Description'], SQLSRV_PARAM_IN)
-											);
-					
-					$execSaveNode = sqlsrv_query($conn, $sqlQuerySaveNode, $saveNodeParams);
-					
-					if(!$execSaveNode) //If fails to save at any point due to sql error
-					{
-						echo json_encode(array('Error' => 'false', 'ErrorMessage' => sqlsrv_errors()));
-						$errors = true;
-						break;
-					}
-					else
-					{
-						$saveNodeResult = sqlsrv_fetch_array($execSaveNode);
-						//The only time this can return "false" is when the project does not belong to them
-						//This should also never be the case because when we initialize the SaveFullProject, we are also performing this check. THis is just a "just in case" thing though
-						//For the race condition such that while someone is performing a save, someone just did a delete
-						if($saveNodeResult[0] == "false")
-						{
-							echo json_encode(array('Error'=>$saveNodeResult[0], 'ErrorMessage' => $saveNodeResult[1]));
-							$errors = true;
-							break;
-						}
-					}
+					echo json_encode(array('Error' => $resultInitializeProjectSave[0], 'ErrorMessage' => $resultInitializeProjectSave[1]));
 				}
 			}
-			
-			//Only print out the success if no errors occurred during save
-			if(!$errors)
+			else
 			{
-				echo json_encode(array('Error' => $resultInitializeProjectSave[0], 'ErrorMessage' => $resultInitializeProjectSave[1]));
+				echo json_encode(array('Error' => $resultUpdateProjectInfo[0], 'ErrorMessage' => $resultUpdateProjectInfo[1]));
 			}
 		}//TODO confirmed that test works up to this point
 		else
@@ -146,6 +168,7 @@ if(isset($_POST['auth']) && isset($_POST['username']) && isset($_FILES['json']) 
 }
 else
 {
+	ExitFail:
 	echo json_encode(array('Error'=>'false', 'ErrorMessage'=>'Invalid parameters'));
 }
 ?>

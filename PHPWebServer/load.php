@@ -19,7 +19,7 @@ NodesJSON:
 	}
 */
 
-if(isset($_POST['auth']) && isset($_POST['username']) && isset($_POST['projectid'])) //Cannot be greater than 1mb
+if(isset($_POST['auth']) && isset($_POST['username']) && isset($_POST['projectid']) && is_numeric($_POST['projectid'])) //Cannot be greater than 1mb
 {
 	$auth = $_POST['auth'];
 	$username = $_POST['username'];
@@ -31,7 +31,7 @@ if(isset($_POST['auth']) && isset($_POST['username']) && isset($_POST['projectid
 	
 	if(!$conn)
 	{
-		echo json_encode(array('Error' => 'false', 'ErrorMessage' => 'Connection to database not established'));
+		echo json_encode(array('ErrorJSON' => array('Error' => 'false', 'ErrorMessage' => 'Connection to database not established'), 'NodesJSON' => null));
 		die( print_r( sqlsrv_errors(), true));
 	}
 	

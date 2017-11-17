@@ -82,7 +82,7 @@ if(isset($_POST['username']) && isset($_POST['password']))
 			{
 				array_push($pidsArray, $row[0]);
 				array_push($pnamesArray, $row[1]);
-				array_push($pdeadlinsArray, $row[2]);
+				array_push($pdeadlinesArray, $row[2]);
 			}
 			
 			$pids = implode(',', $pidsArray);

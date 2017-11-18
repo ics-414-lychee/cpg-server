@@ -74,7 +74,7 @@ if(isset($_POST['auth']) && isset($_POST['username']) && isset($_POST['json'])) 
 														array($json['ProjectID'], SQLSRV_PARAM_IN),
 														array($nodeListItem['NodeID'], SQLSRV_PARAM_IN),
 														array($nodeListItem['NodeName'], SQLSRV_PARAM_IN),
-														array($nodeListItem['Optimistictime'], SQLSRV_PARAM_IN),
+														array($nodeListItem['OptimisticTime'], SQLSRV_PARAM_IN),
 														array($nodeListItem['NormalTime'], SQLSRV_PARAM_IN),
 														array($nodeListItem['PessimisticTime'], SQLSRV_PARAM_IN),
 														array($nodeid, SQLSRV_PARAM_IN),
